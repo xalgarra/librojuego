@@ -317,7 +317,15 @@ button,input,select{font-family:inherit;color:inherit}
           <div><div class="npick-val" id="pt-cd">3</div><div class="npick-lbl">éxitos</div></div>
           <button class="btn-hp" onclick="adjCD(1)">+</button>
         </div>
-        <button class="btn prim full" onclick="rollPT()">🎲 Hacer prueba</button>
+        <div class="row" style="margin-bottom:4px">
+          <button class="btn prim" style="flex:2" onclick="rollPT()">🎲 Digital</button>
+          <button class="btn" style="flex:1" onclick="startManualPT()">✋ Manual</button>
+        </div>
+        <div id="manual-pt" style="display:none;margin-top:4px">
+          <p style="font-size:12px;color:var(--txt2);margin-bottom:6px">Toca los dados que han salido 4 o más:</p>
+          <div class="dice-display" id="mdice-pt"></div>
+          <button class="btn prim full" style="margin-top:4px" onclick="confirmMDice()">✓ Calcular resultado</button>
+        </div>
         <div class="dice-display" id="pt-dice"></div>
         <div id="pt-result"></div>
       </div>
@@ -344,7 +352,15 @@ button,input,select{font-family:inherit;color:inherit}
             <button class="btn-hp" style="width:32px;height:32px;font-size:18px" onclick="adjTeamCD(1)">+</button>
           </div>
         </div>
-        <button class="btn prim full" onclick="rollTeam()">🎲 Tirar en equipo</button>
+        <div class="row" style="margin-bottom:4px">
+          <button class="btn prim" style="flex:2" onclick="rollTeam()">🎲 Digital</button>
+          <button class="btn" style="flex:1" onclick="startManualTE()">✋ Manual</button>
+        </div>
+        <div id="manual-te" style="display:none;margin-top:4px">
+          <p style="font-size:12px;color:var(--txt2);margin-bottom:6px">Toca los dados que han salido 4 o más:</p>
+          <div class="dice-display" id="mdice-te"></div>
+          <button class="btn prim full" style="margin-top:4px" onclick="confirmManualTE()">✓ Calcular resultado</button>
+        </div>
         <div class="dice-display" id="te-dice"></div>
         <div id="te-result"></div>
       </div>
@@ -392,7 +408,15 @@ button,input,select{font-family:inherit;color:inherit}
           <div><div class="npick-val" id="arm-n">2</div><div class="npick-lbl">dados de armadura</div></div>
           <button class="btn-hp" onclick="adjArm(1)">+</button>
         </div>
-        <button class="btn full" onclick="rollArm()">🛡 Tirar salvación</button>
+        <div class="row" style="margin-bottom:4px">
+          <button class="btn prim" style="flex:2" onclick="rollArm()">🛡 Digital</button>
+          <button class="btn" style="flex:1" onclick="startManualArm()">✋ Manual</button>
+        </div>
+        <div id="manual-arm" style="display:none;margin-top:4px">
+          <p style="font-size:12px;color:var(--txt2);margin-bottom:6px">Toca los dados que han salido 4 o más:</p>
+          <div class="dice-display" id="mdice-arm"></div>
+          <button class="btn prim full" style="margin-top:4px" onclick="confirmMDice()">✓ Calcular resultado</button>
+        </div>
         <div class="dice-display" id="arm-dice" style="margin-bottom:0"></div>
         <div id="arm-result"></div>
       </div>
@@ -884,11 +908,18 @@ function renderCombatChars(){
   document.getElementById('combat-chars').innerHTML=G.party.map((p,i)=>{
     const c=CHARS.find(c=>c.id===p.charId);
     const cm=calcStat(p,'combate');
-    return `<div class="combatant-row">
-      <div class="comb-name">${c.name.split(' ')[0]}</div>
-      <div class="comb-score">${cm}d6</div>
-      <div class="comb-result" id="cr-${i}">—</div>
-      <button class="btn" style="font-size:13px;padding:7px 12px" onclick="rollCombatChar(${i})">⚔ Atacar</button>
+    return `<div>
+      <div class="combatant-row">
+        <div class="comb-name">${c.name.split(' ')[0]}</div>
+        <div class="comb-score">${cm}d6</div>
+        <div class="comb-result" id="cr-${i}">—</div>
+        <button class="btn" style="font-size:12px;padding:7px 8px" onclick="rollCombatChar(${i})">⚔ Digital</button>
+        <button class="btn ghost" style="font-size:12px;padding:7px 8px" onclick="startManualCombat(${i})">✋</button>
+      </div>
+      <div id="manual-combat-${i}" style="display:none;padding:4px 0 8px">
+        <div class="dice-display" id="mdice-combat-${i}" style="min-height:40px"></div>
+        <button class="btn prim full" style="margin-top:4px" onclick="confirmManualCombat()">✓ Confirmar impactos</button>
+      </div>
     </div>`;
   }).join('');
   document.getElementById('combat-total').textContent='';
@@ -1127,6 +1158,117 @@ function saveGistToken(){
   closeModal('modal-gist');
   showToast('✅ Token guardado');
   renderCloudStatus();
+}
+
+// ══════════════════════════════════════════════════════
+// MANUAL DICE INPUT
+// ══════════════════════════════════════════════════════
+function diceHTMLFromBool(arr){
+  return arr.map(h=>`<div class="die ${h?'hit':'miss'}">${h?'✓':'✗'}</div>`).join('');
+}
+
+// Generic manual state (shared by PT and ARM — only one open at a time)
+let mState={id:null,dice:[],cb:null};
+
+function openManual(id,n,cb){
+  mState={id,dice:Array(n).fill(false),cb};
+  refreshMDice();
+  document.getElementById('manual-'+id).style.display='block';
+}
+function toggleMDie(i){
+  mState.dice[i]=!mState.dice[i];
+  refreshMDice();
+}
+function refreshMDice(){
+  document.getElementById('mdice-'+mState.id).innerHTML=
+    mState.dice.map((h,i)=>`<div class="die ${h?'hit':'miss'}" onclick="toggleMDie(${i})">${h?'✓':'✗'}</div>`).join('');
+}
+function confirmMDice(){
+  const succ=mState.dice.filter(Boolean).length;
+  document.getElementById('manual-'+mState.id).style.display='none';
+  mState.cb(mState.dice,succ);
+}
+
+function startManualPT(){
+  const pi=+document.getElementById('pt-char').value;
+  const sk=document.getElementById('pt-skill').value;
+  openManual('pt',calcStat(G.party[pi],sk),(dice,succ)=>{
+    document.getElementById('pt-dice').innerHTML=diceHTMLFromBool(dice);
+    document.getElementById('pt-result').innerHTML=resultBox(succ,ptCD);
+  });
+}
+
+function startManualArm(){
+  openManual('arm',armN,(dice,succ)=>{
+    document.getElementById('arm-dice').innerHTML=diceHTMLFromBool(dice);
+    document.getElementById('arm-result').innerHTML=`<div class="result-box">
+      <div class="result-big neutral">🛡 ${succ} bloqueado${succ!==1?'s':''}</div>
+      <div class="result-sub">${dice.length-succ} daño pasa la armadura</div>
+    </div>`;
+  });
+}
+
+// Team test manual
+let mTE={dice1:[],dice2:[],n1:0,n2:0};
+function startManualTE(){
+  const pi1=+document.getElementById('te-c1').value;
+  const pi2=+document.getElementById('te-c2').value;
+  const sk=document.getElementById('te-skill').value;
+  mTE.n1=calcStat(G.party[pi1],sk);mTE.n2=calcStat(G.party[pi2],sk);
+  mTE.dice1=Array(mTE.n1).fill(false);mTE.dice2=Array(mTE.n2).fill(false);
+  renderMTE();
+  document.getElementById('manual-te').style.display='block';
+}
+function toggleMTE(w,i){
+  if(w===1)mTE.dice1[i]=!mTE.dice1[i];else mTE.dice2[i]=!mTE.dice2[i];
+  renderMTE();
+}
+function renderMTE(){
+  const pi1=+document.getElementById('te-c1').value;
+  const pi2=+document.getElementById('te-c2').value;
+  const c1=CHARS.find(c=>c.id===G.party[pi1].charId).name.split(' ')[0];
+  const c2=CHARS.find(c=>c.id===G.party[pi2].charId).name.split(' ')[0];
+  document.getElementById('mdice-te').innerHTML=
+    `<div style="width:100%;font-size:11px;color:var(--txt2)">${c1} (${mTE.n1}d6):</div>`+
+    mTE.dice1.map((h,i)=>`<div class="die ${h?'hit':'miss'}" onclick="toggleMTE(1,${i})">${h?'✓':'✗'}</div>`).join('')+
+    `<div style="width:100%;font-size:11px;color:var(--txt2);margin-top:4px">${c2} (${mTE.n2}d6):</div>`+
+    mTE.dice2.map((h,i)=>`<div class="die ${h?'hit':'miss'}" onclick="toggleMTE(2,${i})">${h?'✓':'✗'}</div>`).join('');
+}
+function confirmManualTE(){
+  const pi1=+document.getElementById('te-c1').value;
+  const pi2=+document.getElementById('te-c2').value;
+  const c1=CHARS.find(c=>c.id===G.party[pi1].charId).name.split(' ')[0];
+  const c2=CHARS.find(c=>c.id===G.party[pi2].charId).name.split(' ')[0];
+  const succ=mTE.dice1.filter(Boolean).length+mTE.dice2.filter(Boolean).length;
+  document.getElementById('te-dice').innerHTML=
+    `<div style="width:100%;font-size:11px;color:var(--txt2)">${c1}:</div>`+diceHTMLFromBool(mTE.dice1)+
+    `<div style="width:100%;font-size:11px;color:var(--txt2);margin-top:4px">${c2}:</div>`+diceHTMLFromBool(mTE.dice2);
+  document.getElementById('te-result').innerHTML=resultBox(succ,teCD,`${c1}+${c2} (${mTE.n1+mTE.n2} dados)`);
+  document.getElementById('manual-te').style.display='none';
+}
+
+// Combat manual
+let mCombat={pi:-1,dice:[]};
+function startManualCombat(pi){
+  mCombat={pi,dice:Array(calcStat(G.party[pi],'combate')).fill(false)};
+  G.party.forEach((_,i)=>{const el=document.getElementById('manual-combat-'+i);if(el)el.style.display=i===pi?'block':'none';});
+  renderMCombat();
+}
+function toggleMCombat(i){mCombat.dice[i]=!mCombat.dice[i];renderMCombat();}
+function renderMCombat(){
+  const el=document.getElementById('mdice-combat-'+mCombat.pi);
+  if(!el)return;
+  el.innerHTML=mCombat.dice.map((h,i)=>`<div class="die ${h?'hit':'miss'}" onclick="toggleMCombat(${i})">${h?'✓':'✗'}</div>`).join('');
+}
+function confirmManualCombat(){
+  const pi=mCombat.pi;
+  const hits=mCombat.dice.filter(Boolean).length;
+  combatHits[pi]=hits;
+  const el=document.getElementById('cr-'+pi);
+  if(el){el.textContent=hits+' 💥';el.classList.toggle('pos',hits>0);}
+  const total=Object.values(combatHits).reduce((a,b)=>a+b,0);
+  document.getElementById('combat-total').innerHTML=`<b style="color:var(--gold2)">Total daño: ${total}</b> puntos de salud`;
+  document.getElementById('manual-combat-'+pi).style.display='none';
 }
 
 // ══════════════════════════════════════════════════════
