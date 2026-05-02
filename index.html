@@ -282,6 +282,8 @@ button,input,select{font-family:inherit;color:inherit}
       <label>🪙 PLATA</label>
       <input type="number" id="inp-silver" min="0" value="0" onchange="save()">
     </div>
+    <button id="btn-undo" onclick="undo()" title="Deshacer última acción"
+      style="background:none;border:none;color:var(--txt3);font-size:26px;padding:4px 2px;line-height:1;opacity:.3;flex-shrink:0">↺</button>
   </div>
 
   <div class="content">
@@ -504,6 +506,7 @@ let G = {              // game state
   vault:[], codes:[],
 };
 let setup = {selected:[], spells:{}};  // setup temp state
+let undoStack = [];
 let activeChar = 0;
 
 // Dice state
@@ -518,10 +521,27 @@ const GIST_KEY  = 'lk_gh_gist';
 function getToken(){ return localStorage.getItem(TOKEN_KEY)||''; }
 function getGistId(){ return localStorage.getItem(GIST_KEY)||''; }
 function save(){
+  const prev=localStorage.getItem(KEY);
+  if(prev){undoStack.push(prev);if(undoStack.length>15)undoStack.shift();}
   const ei=document.getElementById('inp-entry'), si=document.getElementById('inp-silver');
   if(ei) G.entry=+ei.value||1;
   if(si) G.silver=+si.value||0;
   localStorage.setItem(KEY,JSON.stringify(G));
+  const btn=document.getElementById('btn-undo');
+  if(btn)btn.style.opacity='1';
+}
+function undo(){
+  if(!undoStack.length){showToast('Nada que deshacer');return;}
+  const prev=undoStack.pop();
+  G=JSON.parse(prev);
+  localStorage.setItem(KEY,prev);
+  const ei=document.getElementById('inp-entry'),si=document.getElementById('inp-silver');
+  if(ei)ei.value=G.entry;
+  if(si)si.value=G.silver;
+  renderGrupo();renderCombatChars();renderCharStabs();renderCharDetail();renderMundo();
+  const btn=document.getElementById('btn-undo');
+  if(btn)btn.style.opacity=undoStack.length?'1':'.3';
+  showToast('↺ Acción deshecha');
 }
 function load(){
   try{const s=localStorage.getItem(KEY);if(s)G=JSON.parse(s);}catch(e){}
