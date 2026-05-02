@@ -430,10 +430,13 @@ button,input,select{font-family:inherit;color:inherit}
       <div class="card">
         <div class="card-title">💾 Guardar partida</div>
         <p style="font-size:13px;color:var(--txt2);margin-bottom:10px;line-height:1.5">
-          El progreso se guarda automáticamente en este navegador.<br>
-          Para hacer una copia de seguridad o jugar en otro dispositivo, exporta la partida.
+          El progreso se guarda automáticamente en este navegador.
         </p>
-        <button class="btn prim full" style="margin-bottom:8px" onclick="openExport()">📤 Exportar partida</button>
+        <div id="cloud-status" style="margin-bottom:10px"></div>
+        <button class="btn prim full" style="margin-bottom:8px" onclick="saveToGist()">☁ Guardar en la nube</button>
+        <button class="btn full" style="margin-bottom:12px" onclick="loadFromGist()">☁ Cargar de la nube</button>
+        <div class="sh">Copia local</div>
+        <button class="btn full" style="margin-bottom:8px" onclick="openExport()">📤 Exportar partida</button>
         <button class="btn full" onclick="openImport()">📥 Importar partida guardada</button>
       </div>
 
@@ -509,7 +512,11 @@ let ptCD=3, teCD=3, eDef=4, eAtkD=4, eAtkM=4, armN=2;
 // ══════════════════════════════════════════════════════
 // PERSISTENCE
 // ══════════════════════════════════════════════════════
-const KEY = 'lk_vh_v2';
+const KEY       = 'lk_vh_v2';
+const TOKEN_KEY = 'lk_gh_token';
+const GIST_KEY  = 'lk_gh_gist';
+function getToken(){ return localStorage.getItem(TOKEN_KEY)||''; }
+function getGistId(){ return localStorage.getItem(GIST_KEY)||''; }
 function save(){
   const ei=document.getElementById('inp-entry'), si=document.getElementById('inp-silver');
   if(ei) G.entry=+ei.value||1;
@@ -839,6 +846,7 @@ function renderCharDetail(){
 
 // ── Mundo ──
 function renderMundo(){
+  renderCloudStatus();
   // codes
   const codes=document.getElementById('codes-chips');
   codes.innerHTML=G.codes.length
@@ -1011,6 +1019,94 @@ function showToast(msg){
   });
   document.body.appendChild(t);
   setTimeout(()=>t.remove(),2500);
+}
+
+// ══════════════════════════════════════════════════════
+// CLOUD SYNC (GitHub Gist)
+// ══════════════════════════════════════════════════════
+function renderCloudStatus(){
+  const el=document.getElementById('cloud-status');
+  if(!el)return;
+  const ok=!!getToken();
+  el.innerHTML=`<div style="font-size:12px;background:var(--s2);border-radius:var(--r);padding:8px 10px;display:flex;align-items:center;justify-content:space-between;color:${ok?'var(--grn2)':'var(--txt2)'}">
+    <span>${ok?'☁ Sincronización configurada':'☁ Nube no configurada'}</span>
+    <button class="btn ghost" style="font-size:12px;padding:4px 10px" onclick="openGistConfig()">${ok?'Cambiar token':'Configurar'}</button>
+  </div>`;
+}
+
+async function saveToGist(){
+  const token=getToken();
+  if(!token){openGistConfig();return;}
+  save();
+  const json=localStorage.getItem(KEY)||'{}';
+  const gistId=getGistId();
+  const body={description:'Legendary Kingdoms — El Valle de los Huesos',public:false,
+    files:{'partida.json':{content:json}}};
+  try{
+    showToast('☁ Guardando…');
+    const res=await fetch(gistId?'https://api.github.com/gists/'+gistId:'https://api.github.com/gists',{
+      method:gistId?'PATCH':'POST',
+      headers:{'Authorization':'token '+token,'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    localStorage.setItem(GIST_KEY,data.id);
+    showToast('✅ Partida guardada en la nube');
+  }catch(e){showToast('❌ Error al guardar: '+e.message);}
+}
+
+async function loadFromGist(){
+  const token=getToken();
+  if(!token){openGistConfig();return;}
+  let gistId=getGistId();
+  try{
+    showToast('☁ Buscando partida…');
+    if(!gistId){
+      const res=await fetch('https://api.github.com/gists',{headers:{'Authorization':'token '+token}});
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      const list=await res.json();
+      const found=list.find(g=>g.files&&g.files['partida.json']);
+      if(!found){showToast('❌ No hay partida guardada en la nube');return;}
+      gistId=found.id;
+      localStorage.setItem(GIST_KEY,gistId);
+    }
+    const res2=await fetch('https://api.github.com/gists/'+gistId,{headers:{'Authorization':'token '+token}});
+    if(!res2.ok)throw new Error('HTTP '+res2.status);
+    const data=await res2.json();
+    const content=data.files['partida.json'].content;
+    const parsed=JSON.parse(content);
+    if(!parsed.party||!Array.isArray(parsed.party)||parsed.party.length===0)throw new Error('Sin personajes');
+    localStorage.setItem(KEY,content);
+    showToast('✅ Partida cargada, recargando…');
+    setTimeout(()=>location.reload(),800);
+  }catch(e){showToast('❌ Error al cargar: '+e.message);}
+}
+
+function openGistConfig(){
+  const m=document.createElement('div');
+  m.className='modal-bg';m.id='modal-gist';
+  m.innerHTML=`<div class="modal">
+    <h3>☁ Token de GitHub</h3>
+    <p>Necesitas un <b>Personal Access Token</b> con permiso <b>gist</b>:<br>
+    github.com → Settings → Developer settings → Personal access tokens → Tokens (classic) → New → marca solo <b>gist</b> → Generate.</p>
+    <input class="inp" type="password" id="gist-token" placeholder="ghp_xxxxxxxxxxxx" value="${getToken()}" autocomplete="off">
+    <div class="modal-btns">
+      <button class="btn prim" style="flex:1" onclick="saveGistToken()">Guardar</button>
+      <button class="btn ghost" style="flex:1" onclick="closeModal('modal-gist')">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  setTimeout(()=>document.getElementById('gist-token').focus(),100);
+}
+
+function saveGistToken(){
+  const val=document.getElementById('gist-token').value.trim();
+  if(!val){showToast('❌ Token vacío');return;}
+  localStorage.setItem(TOKEN_KEY,val);
+  closeModal('modal-gist');
+  showToast('✅ Token guardado');
+  renderCloudStatus();
 }
 
 // ══════════════════════════════════════════════════════
