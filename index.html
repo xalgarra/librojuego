@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Legendary Kingdoms</title>
+<style>
+:root{
+  --bg:#0f0d08; --s1:#181208; --s2:#221a0d; --s3:#2c2010; --s4:#382a15;
+  --gold:#c8a040; --gold2:#e8c060; --gold3:#f0d080;
+  --txt:#e0cfa0; --txt2:#8a7850; --txt3:#5a5038;
+  --red:#b83030; --red2:#e04040; --grn:#386828; --grn2:#50a040;
+  --blue:#2850a0; --purple:#603090;
+  --r:8px; --r2:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:'Georgia',serif}
+button,input,select{font-family:inherit;color:inherit}
+
+/* ── Screens ── */
+#screen-setup{position:fixed;inset:0;overflow-y:auto;background:var(--bg);z-index:10}
+#screen-game{position:fixed;inset:0;display:none;flex-direction:column;background:var(--bg)}
+#screen-game.on{display:flex}
+
+/* ── Header ── */
+.hdr{
+  flex-shrink:0;background:var(--s1);border-bottom:2px solid var(--gold);
+  padding:8px 12px;display:flex;align-items:center;gap:10px
+}
+.hdr-brand{flex:1;min-width:0}
+.hdr-brand h1{font-size:13px;color:var(--gold2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-brand p{font-size:11px;color:var(--txt2);font-style:italic}
+.hdr-field{display:flex;flex-direction:column;align-items:center;gap:1px}
+.hdr-field label{font-size:10px;color:var(--txt2)}
+.hdr-field input{
+  width:58px;text-align:center;background:var(--s3);border:1px solid var(--gold);
+  color:var(--gold2);padding:4px 2px;border-radius:5px;font-size:16px;font-weight:bold
+}
+
+/* ── Tabs ── */
+.tabbar{flex-shrink:0;display:flex;background:var(--s1);border-top:2px solid var(--gold)}
+.tb{
+  flex:1;padding:8px 2px 6px;background:none;border:none;
+  color:var(--txt3);font-size:10px;display:flex;flex-direction:column;align-items:center;gap:1px
+}
+.tb .ico{font-size:22px;line-height:1}
+.tb.on{color:var(--gold2)}
+
+/* ── Content ── */
+.content{flex:1;overflow-y:auto;overscroll-behavior:contain}
+.page{display:none;padding:10px 10px 20px}
+.page.on{display:block}
+
+/* ── Cards ── */
+.card{background:var(--s1);border:1px solid var(--s4);border-radius:var(--r2);padding:12px;margin-bottom:10px}
+.card-title{font-size:14px;color:var(--gold2);border-bottom:1px solid var(--s4);padding-bottom:8px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.card-title small{font-size:11px;color:var(--txt2);font-style:italic;font-weight:normal}
+
+/* ── HP ── */
+.hp-block{display:flex;align-items:center;gap:8px;margin:6px 0}
+.hp-bar{flex:1;height:18px;background:var(--s3);border-radius:9px;overflow:hidden}
+.hp-fill{height:100%;border-radius:9px;transition:width .25s}
+.hp-num{font-size:13px;min-width:42px;text-align:center;color:var(--txt)}
+.btn-hp{
+  width:40px;height:40px;border-radius:50%;border:1.5px solid var(--gold);
+  background:var(--s3);color:var(--gold2);font-size:24px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1
+}
+.btn-hp:active{background:var(--s4)}
+
+/* ── Party overview cards ── */
+.pov{background:var(--s2);border:1px solid var(--s4);border-radius:var(--r2);padding:10px 12px;margin-bottom:8px}
+.pov-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.pov-name{flex:1;font-size:15px;color:var(--gold2)}
+.pov-tags{display:flex;gap:5px}
+.tag{font-size:10px;padding:2px 6px;border-radius:10px;border:1px solid}
+.tag.mag{border-color:var(--purple);color:#b080e0}
+.tag.dead{border-color:var(--red);color:var(--red2)}
+.pov-skills{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--txt2);margin-top:4px}
+.pov-skills b{color:var(--txt)}
+
+/* ── Stat grid ── */
+.sg{display:grid;grid-template-columns:1fr auto auto;gap:3px 12px;align-items:center}
+.sg-hd{font-size:11px;color:var(--txt2);text-align:center;padding-bottom:3px;border-bottom:1px solid var(--s4)}
+.sg-row{display:contents}
+.sg-row div{padding:4px 0;border-bottom:1px solid var(--s3);font-size:13px}
+.sg-row div:nth-child(2){text-align:center}
+.sg-row div:nth-child(3){text-align:center;color:var(--gold2);font-weight:bold}
+
+/* ── Equipment ── */
+.eq-row{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--s3);font-size:13px}
+.eq-row:last-child{border-bottom:none}
+.eq-name{flex:1}
+.eq-tag{font-size:11px;background:var(--s3);border:1px solid var(--s4);border-radius:4px;padding:1px 6px;color:var(--gold);white-space:nowrap}
+.btn-x{background:none;border:none;color:var(--txt3);font-size:20px;padding:2px 4px;line-height:1;flex-shrink:0}
+.btn-x:active{color:var(--red2)}
+
+/* ── Spells ── */
+.sp-row{
+  display:flex;align-items:center;gap:10px;background:var(--s3);
+  border:1px solid var(--s4);border-radius:var(--r);padding:8px 10px;margin-bottom:6px
+}
+.sp-info{flex:1;min-width:0}
+.sp-name{font-size:14px}
+.sp-meta{font-size:11px;color:var(--txt2);margin-top:2px}
+.sp-btn{
+  width:44px;height:44px;border-radius:50%;flex-shrink:0;font-size:22px;
+  display:flex;align-items:center;justify-content:center;border:2px solid
+}
+.sp-btn.chg{background:#1a3a10;border-color:var(--grn2)}
+.sp-btn.emp{background:var(--s2);border-color:var(--s4)}
+
+/* ── Dice ── */
+.dice-display{display:flex;flex-wrap:wrap;gap:8px;min-height:56px;align-items:center;justify-content:center;margin:10px 0}
+.die{
+  width:50px;height:50px;border:2px solid var(--gold);border-radius:var(--r);
+  display:flex;align-items:center;justify-content:center;font-size:26px;
+  font-weight:bold;background:var(--s2)
+}
+.die.hit{border-color:var(--grn2);color:var(--grn2)}
+.die.miss{border-color:var(--red);color:var(--red2)}
+.die.neutral{border-color:var(--txt2);color:var(--txt)}
+.result-box{
+  text-align:center;padding:10px;border-radius:var(--r);margin:8px 0;
+  background:var(--s2);border:1px solid var(--s4)
+}
+.result-big{font-size:28px;font-weight:bold;margin-bottom:4px}
+.result-big.pass{color:var(--grn2)}
+.result-big.fail{color:var(--red2)}
+.result-big.neutral{color:var(--gold2)}
+.result-sub{font-size:13px;color:var(--txt2)}
+
+/* ── Inputs ── */
+.inp{
+  background:var(--s3);border:1px solid var(--s4);color:var(--txt);
+  padding:9px 10px;border-radius:var(--r);font-size:14px;width:100%
+}
+.inp::placeholder{color:var(--txt3)}
+.inp:focus{outline:none;border-color:var(--gold)}
+.sel{background:var(--s3);border:1px solid var(--s4);color:var(--txt);padding:9px 8px;border-radius:var(--r);font-size:14px}
+.sel option{background:var(--s2)}
+.row{display:flex;gap:8px;align-items:center}
+.row .inp,.row .sel{flex:1}
+.btn{
+  background:var(--s3);border:1px solid var(--gold);color:var(--gold2);
+  padding:9px 16px;border-radius:var(--r);font-size:14px;white-space:nowrap;flex-shrink:0
+}
+.btn:active{background:var(--s4)}
+.btn.prim{background:var(--gold);color:#0f0d08;border-color:var(--gold);font-weight:bold}
+.btn.prim:active{background:var(--gold2)}
+.btn.full{width:100%;padding:13px;font-size:15px}
+.btn.ghost{border-color:var(--s4);color:var(--txt2)}
+
+/* ── Num picker ── */
+.npick{display:flex;align-items:center;gap:14px;justify-content:center;padding:6px 0}
+.npick-val{font-size:32px;min-width:44px;text-align:center;color:var(--gold2);font-weight:bold;line-height:1}
+.npick-lbl{font-size:11px;color:var(--txt2);text-align:center}
+
+/* ── Section header ── */
+.sh{font-size:12px;color:var(--txt2);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--s3);padding-bottom:4px}
+
+/* ── Chips ── */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chip{
+  background:var(--s3);border:1px solid var(--gold);border-radius:14px;
+  padding:4px 8px 4px 12px;font-size:14px;display:flex;align-items:center;gap:6px;
+  font-weight:bold;letter-spacing:.5px
+}
+
+/* ── Combat helper ── */
+.combatant-row{
+  display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--s3)
+}
+.combatant-row:last-child{border-bottom:none}
+.comb-name{flex:1;font-size:14px}
+.comb-score{font-size:13px;color:var(--txt2)}
+.comb-result{font-size:16px;font-weight:bold;min-width:28px;text-align:right}
+.comb-result.pos{color:var(--grn2)}
+.enemy-atk{background:var(--s2);border:1px solid var(--s4);border-radius:var(--r);padding:10px;margin-top:8px}
+
+/* ── Sub-tabs (chars) ── */
+.stabs{display:flex;gap:4px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
+.stabs::-webkit-scrollbar{display:none}
+.stab{
+  background:var(--s2);border:1px solid var(--s4);color:var(--txt2);
+  padding:6px 14px;border-radius:20px;white-space:nowrap;font-size:13px
+}
+.stab.on{border-color:var(--gold);color:var(--gold2);background:var(--s3)}
+
+/* ── Romance ── */
+.rom-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--s3);font-size:13px}
+.hearts{color:#d04060;letter-spacing:1px}
+
+/* ── Modal ── */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;
+  display:flex;align-items:flex-end;justify-content:center
+}
+.modal{
+  background:var(--s1);border:2px solid var(--gold);border-radius:var(--r2) var(--r2) 0 0;
+  padding:16px;width:100%;max-width:480px;max-height:80vh;display:flex;flex-direction:column;gap:10px
+}
+.modal h3{color:var(--gold2);font-size:16px}
+.modal p{font-size:13px;color:var(--txt2);line-height:1.5}
+.modal textarea{
+  flex:1;min-height:120px;background:var(--s3);border:1px solid var(--s4);
+  color:var(--txt);padding:10px;border-radius:var(--r);font-size:12px;
+  font-family:monospace;resize:none;line-height:1.4
+}
+.modal-btns{display:flex;gap:8px}
+
+/* ═══════════════════ SETUP ═══════════════════ */
+.setup-wrap{max-width:440px;margin:0 auto;padding:16px}
+.setup-hero{text-align:center;margin-bottom:20px}
+.setup-hero h1{font-size:24px;color:var(--gold2);letter-spacing:2px}
+.setup-hero h2{font-size:14px;color:var(--gold);font-style:italic;margin-top:3px}
+.setup-hero p{font-size:12px;color:var(--txt2);margin-top:8px;line-height:1.5}
+.setup-counter{
+  text-align:center;font-size:13px;color:var(--txt2);margin-bottom:12px;
+  background:var(--s2);border-radius:var(--r);padding:8px
+}
+.setup-counter b{color:var(--gold2);font-size:16px}
+.sc{background:var(--s2);border:2px solid var(--s4);border-radius:var(--r2);margin-bottom:8px;overflow:hidden}
+.sc.on{border-color:var(--gold)}
+.sc-head{padding:12px;display:flex;align-items:center;gap:10px}
+.sc-info{flex:1;min-width:0}
+.sc-name{font-size:15px;color:var(--gold2)}
+.sc-sub{font-size:11px;color:var(--txt2);margin-top:2px}
+.sc-stats{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.sstat{background:var(--s3);border:1px solid var(--s4);border-radius:4px;padding:2px 7px;font-size:11px}
+.sstat b{color:var(--gold)}
+.sc-btn{
+  flex-shrink:0;width:60px;height:36px;border-radius:18px;border:1.5px solid var(--gold);
+  background:var(--s3);color:var(--gold2);font-size:13px
+}
+.sc-btn.on{background:var(--gold);color:#0f0d08;font-weight:bold}
+.spell-picker{background:var(--s3);border-top:1px solid var(--s4);padding:10px 12px;display:none}
+.spell-picker h4{font-size:12px;color:var(--gold);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.spell-picker p{font-size:11px;color:var(--txt2);margin-bottom:8px}
+.sp-opt{display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid var(--s4)}
+.sp-opt:last-child{border-bottom:none}
+.sp-opt input[type=checkbox]{width:20px;height:20px;accent-color:var(--gold);flex-shrink:0;margin-top:2px;cursor:pointer}
+.sp-opt label{flex:1;cursor:pointer;font-size:13px;line-height:1.4}
+.sp-opt label em{color:var(--txt2);font-size:11px}
+.setup-btn{
+  width:100%;padding:15px;background:var(--gold);color:#0f0d08;border:none;
+  border-radius:var(--r2);font-size:18px;font-weight:bold;margin-top:10px;
+  opacity:.4;pointer-events:none
+}
+.setup-btn.ready{opacity:1;pointer-events:auto}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ SETUP ═══════════════════════════ -->
+<div id="screen-setup">
+<div class="setup-wrap">
+  <div class="setup-hero">
+    <h1>⚔ LEGENDARY KINGDOMS</h1>
+    <h2>El Valle de los Huesos</h2>
+    <p>Elige exactamente <b style="color:var(--gold2)">4 aventureros</b> para tu grupo.<br>Los hechiceros necesitan elegir 3 hechizos iniciales.</p>
+  </div>
+  <div class="setup-counter">Seleccionados: <b id="sel-count">0</b> / 4</div>
+  <div id="char-list"></div>
+  <button class="setup-btn" id="setup-btn" onclick="startGame()">Comenzar aventura →</button>
+</div>
+</div>
+
+<!-- ═══════════════════════════ GAME ═══════════════════════════ -->
+<div id="screen-game">
+
+  <div class="hdr">
+    <div class="hdr-brand">
+      <h1>⚔ Legendary Kingdoms</h1>
+      <p>El Valle de los Huesos</p>
+    </div>
+    <div class="hdr-field">
+      <label>ENTRADA</label>
+      <input type="number" id="inp-entry" min="1" value="1" onchange="save()">
+    </div>
+    <div class="hdr-field">
+      <label>🪙 PLATA</label>
+      <input type="number" id="inp-silver" min="0" value="0" onchange="save()">
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ── Grupo ── -->
+    <div class="page on" id="pg-grupo">
+      <div id="grupo-list"></div>
+    </div>
+
+    <!-- ── Dados ── -->
+    <div class="page" id="pg-dados">
+
+      <!-- Prueba de habilidad -->
+      <div class="card">
+        <div class="card-title">🎯 Prueba de habilidad</div>
+        <div class="sh">Personaje y habilidad</div>
+        <div class="row" style="margin-bottom:8px">
+          <select class="sel" id="pt-char" onchange="updatePTval()" style="flex:2"></select>
+          <select class="sel" id="pt-skill" onchange="updatePTval()" style="flex:2">
+            <option value="combate">Combate</option>
+            <option value="sigilo">Sigilo</option>
+            <option value="sabiduria">Sabiduría</option>
+            <option value="supervivencia">Supervivencia</option>
+            <option value="carisma">Carisma</option>
+          </select>
+        </div>
+        <div id="pt-info" style="font-size:13px;color:var(--txt2);margin-bottom:8px"></div>
+        <div class="sh">Dificultad (CD — éxitos necesarios)</div>
+        <div class="npick" style="margin-bottom:8px">
+          <button class="btn-hp" onclick="adjCD(-1)">−</button>
+          <div><div class="npick-val" id="pt-cd">3</div><div class="npick-lbl">éxitos</div></div>
+          <button class="btn-hp" onclick="adjCD(1)">+</button>
+        </div>
+        <button class="btn prim full" onclick="rollPT()">🎲 Hacer prueba</button>
+        <div class="dice-display" id="pt-dice"></div>
+        <div id="pt-result"></div>
+      </div>
+
+      <!-- Prueba de equipo -->
+      <div class="card">
+        <div class="card-title">🤝 Prueba de equipo <small>2 personajes combinan dados</small></div>
+        <div class="row" style="margin-bottom:6px">
+          <select class="sel" id="te-c1"></select>
+          <select class="sel" id="te-c2"></select>
+        </div>
+        <div class="row" style="margin-bottom:8px">
+          <select class="sel" id="te-skill">
+            <option value="combate">Combate</option>
+            <option value="sigilo">Sigilo</option>
+            <option value="sabiduria">Sabiduría</option>
+            <option value="supervivencia">Supervivencia</option>
+            <option value="carisma">Carisma</option>
+          </select>
+          <div style="display:flex;align-items:center;gap:6px">
+            <label style="font-size:12px;color:var(--txt2)">CD</label>
+            <button class="btn-hp" style="width:32px;height:32px;font-size:18px" onclick="adjTeamCD(-1)">−</button>
+            <span id="te-cd" style="font-size:20px;color:var(--gold2);min-width:24px;text-align:center">3</span>
+            <button class="btn-hp" style="width:32px;height:32px;font-size:18px" onclick="adjTeamCD(1)">+</button>
+          </div>
+        </div>
+        <button class="btn prim full" onclick="rollTeam()">🎲 Tirar en equipo</button>
+        <div class="dice-display" id="te-dice"></div>
+        <div id="te-result"></div>
+      </div>
+
+      <!-- Combate -->
+      <div class="card">
+        <div class="card-title">⚔ Combate</div>
+        <div class="sh">Defensa del enemigo (CD por dado)</div>
+        <div class="npick" style="margin-bottom:8px">
+          <button class="btn-hp" onclick="adjED(-1)">−</button>
+          <div><div class="npick-val" id="enemy-def">4</div><div class="npick-lbl">o más para impactar</div></div>
+          <button class="btn-hp" onclick="adjED(1)">+</button>
+        </div>
+        <div class="sh">Ataques del grupo</div>
+        <div id="combat-chars"></div>
+        <div id="combat-total" style="font-size:13px;color:var(--txt2);text-align:center;margin-top:8px"></div>
+
+        <div class="enemy-atk">
+          <div class="sh" style="margin-top:0">Ataque enemigo</div>
+          <div class="row" style="margin-bottom:8px">
+            <div style="flex:1;display:flex;align-items:center;gap:6px;font-size:13px">
+              <label style="color:var(--txt2)">Dados:</label>
+              <button class="btn-hp" style="width:32px;height:32px;font-size:18px" onclick="adjEA('d',-1)">−</button>
+              <span id="ea-d" style="font-size:18px;color:var(--gold2);min-width:24px;text-align:center">4</span>
+              <button class="btn-hp" style="width:32px;height:32px;font-size:18px" onclick="adjEA('d',1)">+</button>
+            </div>
+            <div style="flex:1;display:flex;align-items:center;gap:6px;font-size:13px">
+              <label style="color:var(--txt2)">Mín:</label>
+              <button class="btn-hp" style="width:32px;height:32px;font-size:18px" onclick="adjEA('m',-1)">−</button>
+              <span id="ea-m" style="font-size:18px;color:var(--gold2);min-width:24px;text-align:center">4</span>
+              <button class="btn-hp" style="width:32px;height:32px;font-size:18px" onclick="adjEA('m',1)">+</button>
+            </div>
+          </div>
+          <button class="btn full" onclick="rollEnemy()">💀 Tirar ataque enemigo</button>
+          <div class="dice-display" id="ea-dice" style="margin-bottom:0"></div>
+          <div id="ea-result"></div>
+        </div>
+      </div>
+
+      <!-- Armadura -->
+      <div class="card">
+        <div class="card-title">🛡 Salvación de armadura <small>4, 5 o 6 = 1 daño bloqueado</small></div>
+        <div class="npick" style="margin-bottom:8px">
+          <button class="btn-hp" onclick="adjArm(-1)">−</button>
+          <div><div class="npick-val" id="arm-n">2</div><div class="npick-lbl">dados de armadura</div></div>
+          <button class="btn-hp" onclick="adjArm(1)">+</button>
+        </div>
+        <button class="btn full" onclick="rollArm()">🛡 Tirar salvación</button>
+        <div class="dice-display" id="arm-dice" style="margin-bottom:0"></div>
+        <div id="arm-result"></div>
+      </div>
+
+    </div>
+
+    <!-- ── Personajes ── -->
+    <div class="page" id="pg-chars">
+      <div class="stabs" id="char-stabs"></div>
+      <div id="char-detail"></div>
+    </div>
+
+    <!-- ── Mundo ── -->
+    <div class="page" id="pg-mundo">
+
+      <div class="card">
+        <div class="card-title">📜 Códigos activos</div>
+        <p style="font-size:12px;color:var(--txt2);margin-bottom:10px">
+          Anota los códigos que el libro te pide rodear con un círculo.
+        </p>
+        <div id="codes-chips" class="chips"></div>
+        <div class="row">
+          <input class="inp" id="code-inp" placeholder="B12, E13…" style="text-transform:uppercase;font-weight:bold;letter-spacing:1px" onkeydown="if(event.key==='Enter')addCode()">
+          <button class="btn" onclick="addCode()">+ Añadir</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🏦 La Bóveda <small>almacén mágico compartido</small></div>
+        <div id="vault-list"></div>
+        <div class="row" style="margin-top:10px">
+          <input class="inp" id="vault-inp" placeholder="Añadir objeto a la Bóveda…" onkeydown="if(event.key==='Enter')addVault()">
+          <button class="btn" onclick="addVault()">+ Guardar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💾 Guardar partida</div>
+        <p style="font-size:13px;color:var(--txt2);margin-bottom:10px;line-height:1.5">
+          El progreso se guarda automáticamente en este navegador.<br>
+          Para hacer una copia de seguridad o jugar en otro dispositivo, exporta la partida.
+        </p>
+        <button class="btn prim full" style="margin-bottom:8px" onclick="openExport()">📤 Exportar partida</button>
+        <button class="btn full" onclick="openImport()">📥 Importar partida guardada</button>
+      </div>
+
+      <div class="card" style="text-align:center">
+        <div class="card-title">⚙ Opciones</div>
+        <button class="btn ghost full" onclick="resetGame()">↺ Reiniciar partida</button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <button class="tb on" id="tb-grupo" onclick="goTab('grupo')"><span class="ico">👥</span>Grupo</button>
+    <button class="tb"    id="tb-dados" onclick="goTab('dados')"><span class="ico">🎲</span>Dados</button>
+    <button class="tb"    id="tb-chars" onclick="goTab('chars')"><span class="ico">📋</span>Fichas</button>
+    <button class="tb"    id="tb-mundo" onclick="goTab('mundo')"><span class="ico">🌍</span>Mundo</button>
+  </div>
+
+</div><!-- /screen-game -->
+
+<script>
+// ══════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════
+const CHARS = [
+  {id:'jessica', name:'Sar Jessica Dayne',  mag:false,
+   stats:{combate:5,sigilo:1,sabiduria:3,supervivencia:2,carisma:4}, hp:8},
+  {id:'tiquon',  name:"Lord Ti'quon",       mag:true,
+   stats:{combate:1,sigilo:2,sabiduria:5,supervivencia:1,carisma:2}, hp:6},
+  {id:'akihiro', name:'Akihiro de Cáliz',   mag:false,
+   stats:{combate:4,sigilo:3,sabiduria:2,supervivencia:5,carisma:1}, hp:8},
+  {id:'brash',   name:'Brash',              mag:false,
+   stats:{combate:2,sigilo:4,sabiduria:3,supervivencia:1,carisma:5}, hp:8},
+  {id:'tasha',   name:'Tasha',              mag:false,
+   stats:{combate:3,sigilo:5,sabiduria:1,supervivencia:3,carisma:3}, hp:8},
+  {id:'amelia',  name:'Amelia Pasa-Dayne',  mag:true,
+   stats:{combate:3,sigilo:2,sabiduria:2,supervivencia:3,carisma:1}, hp:6},
+];
+const SKILLS = ['combate','sigilo','sabiduria','supervivencia','carisma'];
+const SLBL   = {combate:'Combate',sigilo:'Sigilo',sabiduria:'Sabiduría',supervivencia:'Supervivencia',carisma:'Carisma'};
+
+const INIT_SPELLS = [
+  {id:'idioma_animal',   name:'Idioma animal',     type:'aventura', cost:50,
+   desc:'Comunicarte con animales. El texto indica cuándo usarlo.'},
+  {id:'armadura_cel',    name:'Armadura celestial', type:'combate',  cost:50,
+   desc:'+3 armadura a un miembro del grupo hasta final del combate.'},
+  {id:'rayo_hielo',      name:'Rayo de hielo',      type:'combate',  cost:50,
+   desc:'Ataque inmediato con Combate 8 contra cualquier oponente.'},
+  {id:'chorro_veneno',   name:'Chorro de veneno',   type:'combate',  cost:50,
+   desc:'Dos ataques con Combate 5 contra dos oponentes distintos.'},
+  {id:'golpe_infalible', name:'Golpe infalible',    type:'combate',  cost:50,
+   desc:'Un oponente pierde 3 puntos de salud automáticamente.'},
+  {id:'espiritu_lobo',   name:'Espíritu de lobo',   type:'aventura', cost:75,
+   desc:'+3 éxitos automáticos en una prueba de Supervivencia fallida.'},
+  {id:'cofre_magico',    name:'Cofre mágico',       type:'aventura', cost:100,
+   desc:'Acceder a la Bóveda en cualquier momento.'},
+];
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+let G = {              // game state
+  entry:1, silver:0,
+  party:[],            // [{charId, salud, equip:[], spells:[], romance:[]}]
+  vault:[], codes:[],
+};
+let setup = {selected:[], spells:{}};  // setup temp state
+let activeChar = 0;
+
+// Dice state
+let ptCD=3, teCD=3, eDef=4, eAtkD=4, eAtkM=4, armN=2;
+
+// ══════════════════════════════════════════════════════
+// PERSISTENCE
+// ══════════════════════════════════════════════════════
+const KEY = 'lk_vh_v2';
+function save(){
+  const ei=document.getElementById('inp-entry'), si=document.getElementById('inp-silver');
+  if(ei) G.entry=+ei.value||1;
+  if(si) G.silver=+si.value||0;
+  localStorage.setItem(KEY,JSON.stringify(G));
+}
+function load(){
+  try{const s=localStorage.getItem(KEY);if(s)G=JSON.parse(s);}catch(e){}
+}
+
+// ══════════════════════════════════════════════════════
+// SETUP
+// ══════════════════════════════════════════════════════
+function buildSetup(){
+  const el=document.getElementById('char-list');
+  el.innerHTML=CHARS.map(c=>{
+    const statsHtml=SKILLS.map(sk=>
+      `<div class="sstat">${SLBL[sk][0]} <b>${c.stats[sk]}</b></div>`
+    ).join('')+`<div class="sstat">❤ <b>${c.hp}</b></div>`;
+
+    const spellsHtml=c.mag?`
+      <div class="spell-picker" id="spk-${c.id}">
+        <h4>Elige 3 hechizos iniciales</h4>
+        <p id="spk-cnt-${c.id}">0 de 3 elegidos</p>
+        ${INIT_SPELLS.map(sp=>`
+          <div class="sp-opt">
+            <input type="checkbox" id="cb-${c.id}-${sp.id}" value="${sp.id}"
+              onclick="event.stopPropagation()" onchange="toggleSpell('${c.id}','${sp.id}',this)">
+            <label for="cb-${c.id}-${sp.id}" onclick="event.stopPropagation()">
+              <b>${sp.name}</b> <em>(${sp.type} · ${sp.cost}🪙 recarga)</em><br>
+              <em>${sp.desc}</em>
+            </label>
+          </div>`).join('')}
+      </div>`:''
+
+    return `<div class="sc" id="sc-${c.id}">
+      <div class="sc-head">
+        <div class="sc-info">
+          <div class="sc-name">${c.name}</div>
+          <div class="sc-sub">${c.mag?'✨ Hechicero/a':'⚔ Aventurero/a'} — Salud ${c.hp}</div>
+          <div class="sc-stats">${statsHtml}</div>
+        </div>
+        <button class="sc-btn" id="scb-${c.id}" onclick="toggleChar('${c.id}')">+</button>
+      </div>
+      ${spellsHtml}
+    </div>`;
+  }).join('');
+}
+
+function toggleChar(id){
+  const idx=setup.selected.indexOf(id);
+  if(idx>=0){
+    setup.selected.splice(idx,1);
+    setup.spells[id]=[];
+    const spk=document.getElementById('spk-'+id);
+    if(spk){
+      spk.style.display='none';
+      document.querySelectorAll(`input[id^="cb-${id}-"]`).forEach(cb=>{cb.checked=false;});
+      document.getElementById('spk-cnt-'+id).textContent='0 de 3 elegidos';
+    }
+  }else{
+    if(setup.selected.length>=4)return;
+    setup.selected.push(id);
+    setup.spells[id]=setup.spells[id]||[];
+    const spk=document.getElementById('spk-'+id);
+    if(spk) spk.style.display='block';
+  }
+  // update visuals
+  CHARS.forEach(c=>{
+    const on=setup.selected.includes(c.id);
+    document.getElementById('sc-'+c.id).classList.toggle('on',on);
+    const btn=document.getElementById('scb-'+c.id);
+    btn.textContent=on?'✓':'+';
+    btn.classList.toggle('on',on);
+  });
+  document.getElementById('sel-count').textContent=setup.selected.length;
+  checkSetupReady();
+}
+
+function toggleSpell(charId,spellId,cb){
+  if(!setup.spells[charId])setup.spells[charId]=[];
+  const arr=setup.spells[charId];
+  if(cb.checked){
+    if(arr.length>=3){cb.checked=false;return;}
+    arr.push(spellId);
+  }else{
+    const i=arr.indexOf(spellId);if(i>=0)arr.splice(i,1);
+  }
+  document.getElementById('spk-cnt-'+charId).textContent=arr.length+' de 3 elegidos';
+  checkSetupReady();
+}
+
+function checkSetupReady(){
+  const ready=setup.selected.length===4&&setup.selected.every(id=>{
+    const c=CHARS.find(c=>c.id===id);
+    return !c.mag||(setup.spells[id]||[]).length===3;
+  });
+  const btn=document.getElementById('setup-btn');
+  btn.classList.toggle('ready',ready);
+  if(!ready){
+    const n=setup.selected.length;
+    btn.textContent=n<4?`Elige ${4-n} aventurero${4-n!==1?'s':''} más…`:'Elige 3 hechizos para cada mago';
+  }else{
+    btn.textContent='Comenzar aventura →';
+  }
+}
+
+function startGame(){
+  G.party=setup.selected.map(id=>{
+    const c=CHARS.find(c=>c.id===id);
+    const spells=c.mag?(setup.spells[id]||[]).map(sid=>{
+      const sp=INIT_SPELLS.find(s=>s.id===sid);
+      return {...sp,charged:true};
+    }):[];
+    return {charId:id,salud:c.hp,equip:[],spells,romance:[]};
+  });
+  G.entry=1;G.silver=0;G.vault=[];G.codes=[];
+  save();
+  launchGame();
+}
+
+// ══════════════════════════════════════════════════════
+// GAME
+// ══════════════════════════════════════════════════════
+function launchGame(){
+  document.getElementById('screen-setup').style.display='none';
+  document.getElementById('screen-game').classList.add('on');
+  document.getElementById('inp-entry').value=G.entry;
+  document.getElementById('inp-silver').value=G.silver;
+  populateSelects();
+  renderGrupo();
+  renderCombatChars();
+  renderCharStabs();
+  renderCharDetail();
+  renderMundo();
+}
+
+function goTab(name){
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+  document.getElementById('tb-'+name).classList.add('on');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.getElementById('pg-'+name).classList.add('on');
+}
+
+// ── Grupo ──
+function renderGrupo(){
+  document.getElementById('grupo-list').innerHTML=G.party.map((p,i)=>{
+    const c=CHARS.find(c=>c.id===p.charId);
+    const pct=Math.max(0,p.salud/c.hp*100);
+    const col=pct>50?'var(--grn2)':pct>25?'#b07830':'var(--red2)';
+    const dead=p.salud<=0;
+    const arm=calcArm(p);
+    const combMod=calcStat(p,'combate');
+    return `<div class="pov ${dead?'dead':''}">
+      <div class="pov-top">
+        <div class="pov-name">${c.name}</div>
+        <div class="pov-tags">
+          ${c.mag?'<span class="tag mag">✨mago</span>':''}
+          ${dead?'<span class="tag dead">☠derrotado</span>':''}
+        </div>
+      </div>
+      <div class="hp-block">
+        <button class="btn-hp" onclick="adjHP(${i},-1)">−</button>
+        <div class="hp-bar"><div class="hp-fill" style="width:${pct}%;background:${col}"></div></div>
+        <div class="hp-num">${p.salud}/${c.hp}</div>
+        <button class="btn-hp" onclick="adjHP(${i},1)">+</button>
+      </div>
+      <div class="pov-skills">
+        <span>⚔<b>${combMod}</b></span>
+        ${arm>0?`<span>🛡<b>${arm}</b></span>`:''}
+        ${SKILLS.filter(s=>s!=='combate').map(s=>`<span>${SLBL[s][0]}<b>${calcStat(p,s)}</b></span>`).join('')}
+        ${c.mag?`<span>✨<b>${p.spells.filter(s=>s.charged).length}/${p.spells.length}</b></span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Personajes ──
+function renderCharStabs(){
+  document.getElementById('char-stabs').innerHTML=G.party.map((p,i)=>{
+    const c=CHARS.find(c=>c.id===p.charId);
+    const short=c.name.split(' ').find(w=>!['Sar','Lord','de'].includes(w))||c.name.split(' ')[0];
+    return `<button class="stab${i===activeChar?' on':''}" onclick="switchChar(${i})">${short}</button>`;
+  }).join('');
+}
+
+function switchChar(i){activeChar=i;renderCharStabs();renderCharDetail();}
+
+function renderCharDetail(){
+  const p=G.party[activeChar];
+  const c=CHARS.find(c=>c.id===p.charId);
+  const arm=calcArm(p);
+  const dead=p.salud<=0;
+  const pct=Math.max(0,p.salud/c.hp*100);
+  const col=pct>50?'var(--grn2)':pct>25?'#b07830':'var(--red2)';
+
+  // stats
+  const statsRows=SKILLS.map(sk=>{
+    const base=c.stats[sk];
+    const mod=calcStat(p,sk);
+    const diff=mod-base;
+    return `<div class="sg-row">
+      <div>${SLBL[sk]}</div>
+      <div>${base}</div>
+      <div>${diff>0?'+'+diff+' = '+mod:mod}</div>
+    </div>`;
+  }).join('');
+
+  // equip
+  const eqHtml=p.equip.length
+    ?p.equip.map((e,i)=>`<div class="eq-row">
+        <div class="eq-name">${e.name}</div>
+        ${e.bt!=='none'?`<div class="eq-tag">+${e.bv} ${bLabel(e.bt)}</div>`:''}
+        <button class="btn-x" onclick="rmEquip(${activeChar},${i})">✕</button>
+      </div>`).join('')
+    :'<div style="color:var(--txt2);font-size:13px;padding:4px 0">Sin equipo</div>';
+
+  // spells
+  const spHtml=c.mag?`
+    <div class="card">
+      <div class="card-title">✨ Libro de hechizos <small>${p.spells.filter(s=>s.charged).length}/${p.spells.length} cargados</small></div>
+      ${p.spells.map((sp,si)=>`
+        <div class="sp-row">
+          <div class="sp-info">
+            <div class="sp-name">${sp.name}</div>
+            <div class="sp-meta">${sp.type} · Recarga ${sp.cost}🪙</div>
+            <div class="sp-meta">${sp.desc}</div>
+          </div>
+          <button class="sp-btn ${sp.charged?'chg':'emp'}"
+            title="${sp.charged?'Cargado — toca para marcar como usado':'Descargado — toca para recargar'}"
+            onclick="toggleCharge(${activeChar},${si})">${sp.charged?'⚡':'💤'}</button>
+        </div>`).join('')}
+      ${p.spells.length<6?`
+        <div class="sh">Aprender hechizo nuevo</div>
+        <div class="row" style="margin-bottom:8px">
+          <select class="sel" id="spell-sel" style="flex:1">
+            <option value="">— Elegir hechizo —</option>
+            ${INIT_SPELLS.filter(s=>!p.spells.find(ps=>ps.id===s.id))
+              .map(s=>`<option value="${s.id}">${s.name} (${s.type})</option>`).join('')}
+            <option value="__new__">✏ Hechizo personalizado…</option>
+          </select>
+          <button class="btn" onclick="learnSpell(${activeChar})">Aprender</button>
+        </div>
+        <div id="custom-spell" style="display:none">
+          <div class="row" style="margin-bottom:6px">
+            <input class="inp" id="csp-n" placeholder="Nombre del hechizo">
+          </div>
+          <div class="row" style="margin-bottom:6px">
+            <select class="sel" id="csp-t"><option value="aventura">aventura</option><option value="combate">combate</option></select>
+            <input class="inp" type="number" id="csp-c" placeholder="Coste recarga 🪙" style="max-width:120px">
+          </div>
+          <button class="btn prim full" onclick="addCustomSpell(${activeChar})">+ Añadir hechizo</button>
+        </div>`:'<div style="font-size:12px;color:var(--txt2);margin-top:8px">Libro lleno (6/6 hechizos)</div>'}
+    </div>`:'';
+
+  // romance
+  const romHtml=`
+    <div class="card">
+      <div class="card-title">❤ Romance</div>
+      ${p.romance.length?p.romance.map((r,ri)=>`
+        <div class="rom-row">
+          <span class="hearts">${'❤'.repeat(r.h)}</span>
+          <span style="flex:1">${r.n}</span>
+          <button class="btn-hp" style="width:32px;height:32px;font-size:16px;margin-right:4px" onclick="adjRom(${activeChar},${ri},1)">❤+</button>
+          <button class="btn-x" onclick="rmRom(${activeChar},${ri})">✕</button>
+        </div>`).join(''):'<div style="color:var(--txt2);font-size:13px;padding:4px 0">Sin vínculos románticos aún</div>'}
+      <div class="row" style="margin-top:10px">
+        <input class="inp" id="rom-inp" placeholder="Nombre de la persona…" onkeydown="if(event.key==='Enter')addRom(${activeChar})">
+        <button class="btn" onclick="addRom(${activeChar})">+ ❤</button>
+      </div>
+    </div>`;
+
+  document.getElementById('char-detail').innerHTML=`
+    <div class="card">
+      <div class="card-title">
+        ${c.name} ${c.mag?'<small>✨ hechicero/a</small>':''}
+        ${dead?'<span class="tag dead" style="font-size:12px">☠ derrotado</span>':''}
+      </div>
+      <div class="hp-block">
+        <button class="btn-hp" onclick="adjHP(${activeChar},-1)">−</button>
+        <div class="hp-bar" style="height:22px"><div class="hp-fill" style="width:${pct}%;background:${col}"></div></div>
+        <div class="hp-num" style="font-size:17px;font-weight:bold">${p.salud} / ${c.hp}</div>
+        <button class="btn-hp" onclick="adjHP(${activeChar},1)">+</button>
+      </div>
+      <button class="btn ghost full" style="font-size:13px;padding:7px;margin-top:4px" onclick="healFull(${activeChar})">⊕ Curar hasta el máximo</button>
+
+      <div class="sh" style="margin-top:14px">Habilidades — base → <b style="color:var(--gold2)">modificado</b></div>
+      <div class="sg">
+        <div class="sg-hd"></div><div class="sg-hd">Base</div><div class="sg-hd">Mod.</div>
+        ${statsRows}
+        ${arm>0?`<div class="sg-row"><div>🛡 Armadura</div><div>—</div><div>${arm}</div></div>`:''}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🎒 Equipo <small>${p.equip.length}/10</small></div>
+      ${eqHtml}
+      ${p.equip.length<10?`
+        <div class="sh">Añadir objeto</div>
+        <div class="row" style="margin-bottom:6px">
+          <input class="inp" id="eq-n" placeholder="Nombre del objeto">
+        </div>
+        <div class="row">
+          <select class="sel" id="eq-t" style="flex:2">
+            <option value="none">Sin bonificación</option>
+            <option value="combate">+ Combate</option>
+            <option value="sigilo">+ Sigilo</option>
+            <option value="sabiduria">+ Sabiduría</option>
+            <option value="supervivencia">+ Supervivencia</option>
+            <option value="carisma">+ Carisma</option>
+            <option value="armadura">+ Armadura</option>
+          </select>
+          <input class="inp" type="number" id="eq-v" value="1" min="1" max="10" style="max-width:64px">
+          <button class="btn" onclick="addEquip(${activeChar})">+</button>
+        </div>`:'<div style="font-size:12px;color:var(--txt2);margin-top:8px">Inventario lleno (10/10)</div>'}
+    </div>
+
+    ${spHtml}${romHtml}`;
+
+  // spell selector listener
+  const ss=document.getElementById('spell-sel');
+  if(ss)ss.addEventListener('change',function(){
+    const cf=document.getElementById('custom-spell');
+    if(cf)cf.style.display=this.value==='__new__'?'block':'none';
+  });
+}
+
+// ── Mundo ──
+function renderMundo(){
+  // codes
+  const codes=document.getElementById('codes-chips');
+  codes.innerHTML=G.codes.length
+    ?G.codes.map((c,i)=>`<div class="chip">${c}<button class="btn-x" onclick="rmCode(${i})">✕</button></div>`).join('')
+    :'<div style="color:var(--txt2);font-size:13px;padding:4px 0">Ningún código anotado</div>';
+  // vault
+  const vault=document.getElementById('vault-list');
+  vault.innerHTML=G.vault.length
+    ?G.vault.map((v,i)=>`<div class="eq-row"><div class="eq-name">${v}</div><button class="btn-x" onclick="rmVault(${i})">✕</button></div>`).join('')
+    :'<div style="color:var(--txt2);font-size:13px;padding:4px 0">La Bóveda está vacía</div>';
+}
+
+// ── Combat chars ──
+function renderCombatChars(){
+  document.getElementById('combat-chars').innerHTML=G.party.map((p,i)=>{
+    const c=CHARS.find(c=>c.id===p.charId);
+    const cm=calcStat(p,'combate');
+    return `<div class="combatant-row">
+      <div class="comb-name">${c.name.split(' ')[0]}</div>
+      <div class="comb-score">${cm}d6</div>
+      <div class="comb-result" id="cr-${i}">—</div>
+      <button class="btn" style="font-size:13px;padding:7px 12px" onclick="rollCombatChar(${i})">⚔ Atacar</button>
+    </div>`;
+  }).join('');
+  document.getElementById('combat-total').textContent='';
+}
+
+// ══════════════════════════════════════════════════════
+// ACTIONS
+// ══════════════════════════════════════════════════════
+function adjHP(pi,d){
+  const p=G.party[pi],c=CHARS.find(c=>c.id===p.charId);
+  p.salud=Math.max(0,Math.min(c.hp,p.salud+d));
+  save();renderGrupo();if(pi===activeChar)renderCharDetail();updateQuickRolls();
+}
+function healFull(pi){
+  const c=CHARS.find(c=>c.id===G.party[pi].charId);
+  G.party[pi].salud=c.hp;save();renderGrupo();renderCharDetail();
+}
+function addEquip(pi){
+  const p=G.party[pi];if(p.equip.length>=10)return;
+  const n=document.getElementById('eq-n').value.trim();if(!n)return;
+  const bt=document.getElementById('eq-t').value;
+  const bv=bt!=='none'?(+document.getElementById('eq-v').value||1):0;
+  p.equip.push({name:n,bt,bv});save();renderGrupo();renderCharDetail();renderCombatChars();updateQuickRolls();
+}
+function rmEquip(pi,ei){G.party[pi].equip.splice(ei,1);save();renderGrupo();renderCharDetail();renderCombatChars();updateQuickRolls();}
+function toggleCharge(pi,si){G.party[pi].spells[si].charged=!G.party[pi].spells[si].charged;save();renderGrupo();renderCharDetail();}
+function learnSpell(pi){
+  const p=G.party[pi];if(p.spells.length>=6)return;
+  const v=document.getElementById('spell-sel').value;
+  if(!v||v==='__new__')return;
+  const sp=INIT_SPELLS.find(s=>s.id===v);
+  p.spells.push({...sp,charged:true});save();renderCharDetail();
+}
+function addCustomSpell(pi){
+  const p=G.party[pi];if(p.spells.length>=6)return;
+  const n=document.getElementById('csp-n').value.trim();if(!n)return;
+  const t=document.getElementById('csp-t').value;
+  const c=+document.getElementById('csp-c').value||0;
+  p.spells.push({id:'custom_'+Date.now(),name:n,type:t,cost:c,desc:'',charged:true});
+  save();renderCharDetail();
+}
+function addRom(pi){
+  const inp=document.getElementById('rom-inp');
+  const n=inp.value.trim();if(!n)return;
+  G.party[pi].romance.push({n,h:1});inp.value='';save();renderCharDetail();
+}
+function adjRom(pi,ri,d){G.party[pi].romance[ri].h=Math.max(1,G.party[pi].romance[ri].h+d);save();renderCharDetail();}
+function rmRom(pi,ri){G.party[pi].romance.splice(ri,1);save();renderCharDetail();}
+function addCode(){
+  const inp=document.getElementById('code-inp');
+  const v=inp.value.trim().toUpperCase();if(!v||G.codes.includes(v))return;
+  G.codes.push(v);G.codes.sort();inp.value='';save();renderMundo();
+}
+function rmCode(i){G.codes.splice(i,1);save();renderMundo();}
+function addVault(){
+  const inp=document.getElementById('vault-inp');
+  const v=inp.value.trim();if(!v)return;
+  G.vault.push(v);inp.value='';save();renderMundo();
+}
+function rmVault(i){G.vault.splice(i,1);save();renderMundo();}
+
+function resetGame(){
+  if(!confirm('¿Reiniciar la partida? Se perderá todo el progreso.'))return;
+  localStorage.removeItem(KEY);location.reload();
+}
+
+// ── Export / Import ──
+function openExport(){
+  save();
+  const json = localStorage.getItem(KEY)||'{}';
+  const m = document.createElement('div');
+  m.className = 'modal-bg';
+  m.id = 'modal-export';
+  m.innerHTML = `<div class="modal">
+    <h3>📤 Exportar partida</h3>
+    <p>Copia este texto y guárdalo donde quieras: notas del móvil, email, WhatsApp a ti mismo…<br>
+    Con él puedes restaurar la partida en cualquier dispositivo.</p>
+    <textarea id="export-ta" readonly onclick="this.select()">${json}</textarea>
+    <div class="modal-btns">
+      <button class="btn prim" style="flex:1" onclick="copyExport()">📋 Copiar al portapapeles</button>
+      <button class="btn ghost" style="flex:1" onclick="closeModal('modal-export')">Cerrar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  setTimeout(()=>{
+    const ta=document.getElementById('export-ta');
+    if(ta){ta.select();ta.setSelectionRange(0,9999999);}
+  },100);
+}
+
+function copyExport(){
+  const ta=document.getElementById('export-ta');
+  ta.select();ta.setSelectionRange(0,9999999);
+  try{
+    navigator.clipboard.writeText(ta.value).then(()=>{
+      showToast('✅ Copiado al portapapeles');
+    }).catch(()=>showToast('Selecciona el texto y cópialo manualmente'));
+  }catch(e){
+    document.execCommand('copy');
+    showToast('✅ Copiado');
+  }
+}
+
+function openImport(){
+  const m = document.createElement('div');
+  m.className = 'modal-bg';
+  m.id = 'modal-import';
+  m.innerHTML = `<div class="modal">
+    <h3>📥 Importar partida</h3>
+    <p>Pega aquí el texto de tu partida exportada. <b style="color:var(--red2)">Reemplazará la partida actual.</b></p>
+    <textarea id="import-ta" placeholder="Pega aquí el texto de la partida…"></textarea>
+    <div class="modal-btns">
+      <button class="btn prim" style="flex:1" onclick="doImport()">✅ Cargar partida</button>
+      <button class="btn ghost" style="flex:1" onclick="closeModal('modal-import')">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  document.getElementById('import-ta').focus();
+}
+
+function doImport(){
+  const text = document.getElementById('import-ta').value.trim();
+  try{
+    const parsed = JSON.parse(text);
+    if(!parsed.party||!Array.isArray(parsed.party)||parsed.party.length===0)
+      throw new Error('Sin personajes');
+    localStorage.setItem(KEY, text);
+    showToast('✅ Partida cargada, recargando…');
+    setTimeout(()=>location.reload(), 800);
+  }catch(e){
+    showToast('❌ Texto no válido, comprueba que lo copiaste completo');
+  }
+}
+
+function closeModal(id){
+  const m=document.getElementById(id);
+  if(m) m.remove();
+}
+
+function showToast(msg){
+  const t=document.createElement('div');
+  t.textContent=msg;
+  Object.assign(t.style,{
+    position:'fixed',bottom:'90px',left:'50%',transform:'translateX(-50%)',
+    background:'var(--s1)',border:'1px solid var(--gold)',color:'var(--txt)',
+    padding:'10px 18px',borderRadius:'20px',fontSize:'14px',zIndex:'300',
+    whiteSpace:'nowrap',boxShadow:'0 4px 16px rgba(0,0,0,.5)'
+  });
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2500);
+}
+
+// ══════════════════════════════════════════════════════
+// DICE
+// ══════════════════════════════════════════════════════
+function roll(n){return Array.from({length:n},()=>Math.ceil(Math.random()*6));}
+function diceHTML(results,thresh){
+  return results.map(r=>`<div class="die ${r>=thresh?'hit':r<thresh?'miss':''}">${r}</div>`).join('');
+}
+function resultBox(successes,needed,extra){
+  const pass=successes>=needed;
+  return `<div class="result-box">
+    <div class="result-big ${pass?'pass':'fail'}">${pass?'✅ PASA':'❌ FALLA'}</div>
+    <div class="result-sub">${successes} éxito${successes!==1?'s':''} de ${needed} necesario${needed!==1?'s':''}${extra?'<br>'+extra:''}</div>
+  </div>`;
+}
+
+// Prueba de habilidad
+function adjCD(d){ptCD=Math.max(1,Math.min(20,ptCD+d));document.getElementById('pt-cd').textContent=ptCD;}
+function updatePTval(){
+  const pi=+document.getElementById('pt-char').value;
+  const sk=document.getElementById('pt-skill').value;
+  const p=G.party[pi];
+  const val=calcStat(p,sk);
+  document.getElementById('pt-info').innerHTML=
+    `<b style="color:var(--gold2)">${SLBL[sk]}: ${val}</b> dados — tiras ${val}d6, necesitas ${ptCD} éxitos (4-6)`;
+}
+function rollPT(){
+  const pi=+document.getElementById('pt-char').value;
+  const sk=document.getElementById('pt-skill').value;
+  const val=calcStat(G.party[pi],sk);
+  const results=roll(val);
+  const succ=results.filter(r=>r>=4).length;
+  document.getElementById('pt-dice').innerHTML=diceHTML(results,4);
+  document.getElementById('pt-result').innerHTML=resultBox(succ,ptCD);
+}
+
+// Prueba de equipo
+function adjTeamCD(d){teCD=Math.max(1,Math.min(20,teCD+d));document.getElementById('te-cd').textContent=teCD;}
+function rollTeam(){
+  const pi1=+document.getElementById('te-c1').value;
+  const pi2=+document.getElementById('te-c2').value;
+  const sk=document.getElementById('te-skill').value;
+  const v1=calcStat(G.party[pi1],sk),v2=calcStat(G.party[pi2],sk);
+  const r1=roll(v1),r2=roll(v2);
+  const all=[...r1,...r2];
+  const succ=all.filter(r=>r>=4).length;
+  const c1=CHARS.find(c=>c.id===G.party[pi1].charId).name.split(' ')[0];
+  const c2=CHARS.find(c=>c.id===G.party[pi2].charId).name.split(' ')[0];
+  document.getElementById('te-dice').innerHTML=
+    `<div style="width:100%;font-size:11px;color:var(--txt2);text-align:left">${c1} (${v1}d6):</div>`+
+    diceHTML(r1,4)+
+    `<div style="width:100%;font-size:11px;color:var(--txt2);text-align:left;margin-top:4px">${c2} (${v2}d6):</div>`+
+    diceHTML(r2,4);
+  document.getElementById('te-result').innerHTML=resultBox(succ,teCD,`${c1}+${c2} combinados (${all.length} dados)`);
+}
+
+// Combate
+function adjED(d){eDef=Math.max(2,Math.min(6,eDef+d));document.getElementById('enemy-def').textContent=eDef;
+  document.querySelectorAll('[id^="cr-"]').forEach(e=>e.textContent='—');
+  document.getElementById('combat-total').textContent='';
+}
+let combatHits={};
+function rollCombatChar(pi){
+  const p=G.party[pi];
+  const cm=calcStat(p,'combate');
+  const results=roll(cm);
+  const hits=results.filter(r=>r>=eDef).length;
+  combatHits[pi]=hits;
+  const el=document.getElementById('cr-'+pi);
+  if(el){el.textContent=hits+' 💥';el.classList.toggle('pos',hits>0);}
+  const total=Object.values(combatHits).reduce((a,b)=>a+b,0);
+  document.getElementById('combat-total').innerHTML=
+    `<b style="color:var(--gold2)">Total daño: ${total}</b> puntos de salud`;
+}
+function adjEA(w,d){
+  if(w==='d'){eAtkD=Math.max(1,Math.min(20,eAtkD+d));document.getElementById('ea-d').textContent=eAtkD;}
+  else{eAtkM=Math.max(2,Math.min(6,eAtkM+d));document.getElementById('ea-m').textContent=eAtkM;}
+}
+function rollEnemy(){
+  const results=roll(eAtkD);
+  const dmg=results.filter(r=>r>=eAtkM).length;
+  document.getElementById('ea-dice').innerHTML=diceHTML(results,eAtkM);
+  document.getElementById('ea-result').innerHTML=`<div class="result-box">
+    <div class="result-big ${dmg>0?'fail':'pass'}">${dmg>0?'💥 '+dmg+' daño':'Sin daño'}</div>
+    <div class="result-sub">${results.filter(r=>r>=eAtkM).length} impactos (necesitaba ${eAtkM}+) → repartir entre el grupo</div>
+  </div>`;
+}
+function adjArm(d){armN=Math.max(1,Math.min(20,armN+d));document.getElementById('arm-n').textContent=armN;}
+function rollArm(){
+  const results=roll(armN);
+  const blocked=results.filter(r=>r>=4).length;
+  document.getElementById('arm-dice').innerHTML=diceHTML(results,4);
+  document.getElementById('arm-result').innerHTML=`<div class="result-box">
+    <div class="result-big neutral">🛡 ${blocked} bloqueado${blocked!==1?'s':''}</div>
+    <div class="result-sub">${results.filter(r=>r<4).length} daño pasa la armadura</div>
+  </div>`;
+}
+
+// Quick rolls para combate (se refrescan con equipo)
+function updateQuickRolls(){renderCombatChars();}
+
+// ══════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════
+function calcStat(p,sk){
+  const c=CHARS.find(c=>c.id===p.charId);
+  const base=c.stats[sk]||0;
+  const bonuses=p.equip.filter(e=>e.bt===sk).map(e=>e.bv);
+  return base+(bonuses.length?Math.max(...bonuses):0);
+}
+function calcArm(p){
+  return p.equip.filter(e=>e.bt==='armadura').reduce((s,e)=>s+e.bv,0);
+}
+function bLabel(bt){
+  return {combate:'Cmb',sigilo:'Sig',sabiduria:'Sab',supervivencia:'Sup',carisma:'Car',armadura:'Arm'}[bt]||bt;
+}
+function populateSelects(){
+  const opts=G.party.map((p,i)=>{
+    const c=CHARS.find(c=>c.id===p.charId);
+    return `<option value="${i}">${c.name.split(' ')[0]}</option>`;
+  }).join('');
+  ['pt-char','te-c1','te-c2'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.innerHTML=opts;
+  });
+  // default te-c2 to second char if possible
+  const te2=document.getElementById('te-c2');
+  if(te2&&G.party.length>1)te2.value='1';
+  updatePTval();
+}
+
+// ══════════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════════
+load();
+buildSetup();
+if(G.party&&G.party.length===4){
+  document.getElementById('screen-setup').style.display='none';
+  launchGame();
+}
+</script>
+</body>
+</html>
